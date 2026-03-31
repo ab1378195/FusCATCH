@@ -1,0 +1,141 @@
+DATA_CONFIG =  {
+    "feature_dict": {
+        "if_univariate": False,
+        "if_trend": None,
+        "has_timestamp": None,
+        "if_season": None
+    },
+    "data_set_name": "large_detect"
+}
+MODEL_CONFIG =  {
+    "models": [
+    ],
+    "recommend_model_hyper_params": {
+        "input_chunk_length": 12,
+        "output_chunk_length": 1,
+        "add_relative_index": True,
+        "norm": True
+    }
+}
+EVALUATION_CONFIG =  {
+    "metrics": "all",
+    "strategy_args": {
+        "strategy_name": "unfixed_detect_score",
+        "seed": 2021
+    }
+}
+DEFAULT_TRANSFORMER_BASED_HYPER_PARAMS = {
+    "lr": 0.0001,
+    "Mlr": 0.00001,
+    "e_layers": 3,
+    "n_heads": 2,
+    "cf_dim": 64,
+    "d_ff": 256,
+    "d_model": 128,
+    "head_dim": 64,
+    "individual": 0,
+    "dropout": 0.2,
+    "head_dropout": 0.1,
+    "auxi_loss": "MAE",
+    "auxi_type": "complex",
+    "auxi_mode": "fft",
+    "auxi_lambda": 0.005,
+    "score_lambda": 0.05,
+    "regular_lambda": 0.5,
+    "temperature": 0.07,
+    "patch_stride": 8,
+    "patch_size": 16,
+    "inference_patch_stride": 1,
+    "inference_patch_size": 32,
+    "dc_lambda": 0.005,
+    "module_first": True,
+    "mask": False,
+    "pretrained_model": None,
+    "num_epochs": 3,
+    "batch_size": 128,
+    "patience": 3,
+    "anomaly_ratio": [0.1, 0.5, 1.0, 2, 3, 5.0, 10.0, 15, 20, 25],
+    "seq_len": 192,
+    "pct_start": 0.3,
+    "revin": 1,
+    "affine": 0,
+    "subtract_last": 0,
+    "lradj": "type1",
+    # TFAD hyper-parameters
+    # hyper-parameter for HP filter
+    "hp_lamb": 6400,
+    # hyper-parameter for TCN encoder
+    # "embedding_rep_dim": 128,
+    "tcn_kernel_size": 3,
+    "tcn_out_channels": 128,
+    "tcn_layers": 3,
+    "tcn_maxpool_out_channels": 128,
+    "normalize_embedding": True,
+    "suspect_window_length": 12,
+    # hyper-parameter for classifier
+    "distance": "L2",
+    # hyper-parameter for cross-attention
+    "num_heads": 4,
+    # TFAD training hyper-parameters
+    "tfad_lambda": 0.005,
+    # TFAD data augmentation hyper-parameters
+    "coe_rate": 0.0,
+    "mixup_rate": 0.0,
+    "slow_slop": 0.0,
+}
+TRAIN_LENGTH = {
+    "CalIt2": 2520,
+    "CICIDS": 85115,
+    "Creditcard": 142403,
+    "GECCO": 69260,
+    "Genesis": 3604,
+    "MSL": 58317,
+    "NYC": 13104,
+    "PSM": 132481,
+    "SMD": 708405,
+    "SWAT": 495000,
+    "SMAP": 135183,
+    "ASD_dataset_1": 8640,
+    "ASD_dataset_10": 8640,
+    "ASD_dataset_11": 8640,
+    "ASD_dataset_12": 7291,
+    "ASD_dataset_2": 8640,
+    "ASD_dataset_3": 8640,
+    "ASD_dataset_4": 8640,
+    "ASD_dataset_5": 8640,
+    "ASD_dataset_6": 8640,
+    "ASD_dataset_7": 8640,
+    "ASD_dataset_8": 8640,
+    "ASD_dataset_9": 8640,
+    "synthetic_con0.0494": 20000,
+    "synthetic_con0.072": 20000,
+    "synthetic_glo0.048": 20000,
+    "synthetic_glo0.0718": 20000,
+    "synthetic_sea0.0482": 20000,
+    "synthetic_sea0.0774": 20000,
+    "synthetic_sha0.049": 20000,
+    "synthetic_sha0.0742": 20000,
+    "synthetic_sub_mix0.0574": 20000,
+    "synthetic_sub_mix0.089": 20000,
+    "tre0.0482": 20000,
+    "tre0.0778": 20000,
+    "PaySim": 3181310
+}
+METRICS_SCORE = ["auc_roc", "auc_pr", "R_AUC_ROC", "R_AUC_PR", "VUS_ROC", "VUS_PR"]
+METRICS_LABEL = [
+    "accuracy",
+    "f_score",
+    "precision",
+    "recall",
+    "adjust_accuracy",
+    "adjust_f_score",
+    "adjust_precision",
+    "adjust_recall",
+    "rrecall",
+    "rprecision",
+    "precision_at_k",
+    "rf",
+    "affiliation_f",
+    "affiliation_precision",
+    "affiliation_recall",
+]
