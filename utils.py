@@ -6,8 +6,7 @@ import torch.nn as nn
 from collections.abc import Callable
 import sklearn.metrics
 
-Metrics = Dict[str, float]
-from tfad.utils.donut_metrics import best_f1_search_grid, adjust_predicts_donut
+
 
 def adjust_learning_rate(optimizer, scheduler, epoch, args, printout=True):
     # lr = args.learning_rate * (0.2 ** (epoch // 2))

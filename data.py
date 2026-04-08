@@ -154,10 +154,6 @@ class SegLoader(object):
         """
         if self.mode == "train" or self.mode == "val" or self.mode == "tfad":
             return (self.data.shape[0] - self.win_size) // self.step + 1
-        # elif self.mode == "val":
-        #     return (self.data.shape[0] - self.win_size) // self.step + 1
-        # elif self.mode == "test":
-        #     return (self.data.shape[0] - self.win_size) // self.step + 1
         else:
             return (self.data.shape[0] - self.win_size) // self.win_size + 1
 
@@ -167,10 +163,6 @@ class SegLoader(object):
             return np.float32(self.data[index : index + self.win_size]), np.float32(
                 self.labels[index: index+self.win_size]
             )
-        # elif self.mode == 'val':
-        #     return np.float32(self.data[index : index + self.win_size]), np.float32(
-        #         self.labels[index: index+self.win_size]
-        #     )
         elif self.mode == 'test':
             return np.float32(self.data[index : index + self.win_size]), np.float32(
                 self.test_labels[index : index + self.win_size]

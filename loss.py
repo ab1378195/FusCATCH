@@ -135,10 +135,6 @@ class MemEntropyLoss(torch.nn.Module):
         return entropy
 
 def coral_loss(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    if x.dim() != 2 or y.dim() != 2:
-        raise ValueError(f"Expected 2D tensors, got x={x.shape}, y={y.shape}")
-    if x.shape != y.shape:
-        raise ValueError(f"Shape mismatch: x={x.shape}, y={y.shape}")
     n, d = x.shape
     if n <= 1:
         return x.new_tensor(0.0)

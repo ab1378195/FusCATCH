@@ -1,30 +1,4 @@
-DATA_CONFIG =  {
-    "feature_dict": {
-        "if_univariate": False,
-        "if_trend": None,
-        "has_timestamp": None,
-        "if_season": None
-    },
-    "data_set_name": "large_detect"
-}
-MODEL_CONFIG =  {
-    "models": [
-    ],
-    "recommend_model_hyper_params": {
-        "input_chunk_length": 12,
-        "output_chunk_length": 1,
-        "add_relative_index": True,
-        "norm": True
-    }
-}
-EVALUATION_CONFIG =  {
-    "metrics": "all",
-    "strategy_args": {
-        "strategy_name": "unfixed_detect_score",
-        "seed": 2021
-    }
-}
-DEFAULT_TRANSFORMER_BASED_HYPER_PARAMS = {
+DEFAULT_HYPER_PARAMS = {
     "lr": 0.0001,
     "Mlr": 0.00001,
     "e_layers": 3,

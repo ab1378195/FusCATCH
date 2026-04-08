@@ -1,8 +1,8 @@
-from static import DEFAULT_TRANSFORMER_BASED_HYPER_PARAMS
+from static import DEFAULT_HYPER_PARAMS
 
 class TransformerConfig:
     def __init__(self, **kwargs):
-        for key, value in DEFAULT_TRANSFORMER_BASED_HYPER_PARAMS.items():
+        for key, value in DEFAULT_HYPER_PARAMS.items():
             setattr(self, key, value)
 
         for key, value in kwargs.items():

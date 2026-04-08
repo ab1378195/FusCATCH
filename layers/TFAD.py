@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 from layers.distances import CosineDistance, LpDistance, BinaryOnX1
 from layers.contrastive_classifier import ContrastiveClasifier
-import tfad
+from layers.tcn_encoder import TCNEncoder
 
 def D_matrix(N):
     D = torch.zeros(N - 1, N)
@@ -49,7 +49,7 @@ class TFAD(nn.Module):
         # Decomposition Network
         self.Decomp = hp_filter(lamb=config.hp_lamb, seq_len=config.seq_len)
         # Encoder Network
-        self.encoder1 = tfad.model.TCNEncoder(
+        self.encoder1 = TCNEncoder(
             in_channels=config.c_in,
             out_channels=config.d_model * 2,
             kernel_size=config.tcn_kernel_size,
@@ -60,7 +60,7 @@ class TFAD(nn.Module):
             normalize_embedding=config.normalize_embedding,
         )
         
-        self.encoder2 = tfad.model.TCNEncoder(
+        self.encoder2 = TCNEncoder(
             in_channels=config.c_in,
             out_channels=config.d_model * 2,
             kernel_size=config.tcn_kernel_size,
