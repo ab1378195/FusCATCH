@@ -134,4 +134,18 @@ class MemEntropyLoss(torch.nn.Module):
         entropy = entropy.mean()
         return entropy
 
-
+def coral_loss(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    if x.dim() != 2 or y.dim() != 2:
+        raise ValueError(f"Expected 2D tensors, got x={x.shape}, y={y.shape}")
+    if x.shape != y.shape:
+        raise ValueError(f"Shape mismatch: x={x.shape}, y={y.shape}")
+    n, d = x.shape
+    if n <= 1:
+        return x.new_tensor(0.0)
+    x = x - x.mean(dim=0, keepdim=True)
+    y = y - y.mean(dim=0, keepdim=True)
+    cx = (x.t() @ x) / (n - 1)
+    cy = (y.t() @ y) / (n - 1)
+    loss = (cx - cy).pow(2).sum()
+    loss = loss / (4.0 * d * d)
+    return loss

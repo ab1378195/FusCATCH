@@ -78,10 +78,13 @@ DEFAULT_TRANSFORMER_BASED_HYPER_PARAMS = {
     "num_heads": 4,
     # TFAD training hyper-parameters
     "tfad_lambda": 0.005,
+    "coral_lambda": 0.0,
     # TFAD data augmentation hyper-parameters
     "coe_rate": 0.0,
     "mixup_rate": 0.0,
     "slow_slop": 0.0,
+    # TFAD feature selection hyper-parameters
+    "hidden_dim": 128,
 }
 TRAIN_LENGTH = {
     "CalIt2": 2520,

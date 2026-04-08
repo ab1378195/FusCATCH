@@ -12,7 +12,7 @@ import pandas as pd
 from earlyStopping import EarlyStopping
 from torch.optim import lr_scheduler
 import numpy as np
-from utils import detect_validate, adjust_learning_rate, padding
+from utils import detect_validate, adjust_learning_rate, padding, coe_batch, mixup_batch, slow_slope
 from predict import infer_score, infer_label
 from evaluate import calculate
 from copy import deepcopy
@@ -33,7 +33,6 @@ config = TransformerConfig(
     head_dim=64,
     head_dropout=0.1,
     inference_patch_size=16,
-    itr=1,
     lr=0.0001,
     n_heads=2,
     num_epochs=20, #可能还能加
@@ -42,11 +41,9 @@ config = TransformerConfig(
     patience=10,
     score_lambda=50,
     seq_len=96,
-    small_kernel_merged=False,
     temperature=0.1,
-    use_multi_scale=False,
     # TFAD
-    hp_lamb = 12800, 
+    hp_lamb = 25600, #12800
     # hyper-parameter for TCN encoder
     tcn_kernel_size = 5, 
     tcn_out_channels = 32, 
@@ -60,6 +57,10 @@ config = TransformerConfig(
     num_heads = 16, 
     # TFAD training hyper-parameters
     tfad_lambda = 0.05,  
+    # TFAD data augmentation hyper-parameters
+    coe_rate = 0.5, 
+    mixup_rate = 0.01, #0.1
+    slow_slop = 0.0, 
 )
 
 scaler = StandardScaler()
@@ -151,18 +152,54 @@ for epoch in range(config.num_epochs):
     for i, (input, target) in enumerate(train_data_loader):
         # target: [bs, seq_len, 1]
         y = target[:, -config.suspect_window_length:, :].squeeze(-1).max(dim=1)[0].float().to(device) # y: [batch_size]
+        x = input.float().to(device)
+        
+        if config.coe_rate > 0:
+            # print(" coe_rate x shape is", x.shape)
+            x_oe, y_oe = coe_batch(
+                x=x,
+                y=y,
+                coe_rate=config.coe_rate,
+                suspect_window_length=config.suspect_window_length,
+                random_start_end=True,
+            )
+            # Add COE to training batch
+            x = torch.cat((x, x_oe), dim=0)
+            y = torch.cat((y, y_oe), dim=0)
+
+        if config.mixup_rate > 0.0:
+            # print("mixup_rate x shape is", x.shape)
+            x_mixup, y_mixup = mixup_batch(
+                x=x,
+                y=y,
+                mixup_rate=config.mixup_rate,
+            )
+            # Add Mixup to training batch
+            x = torch.cat((x, x_mixup), dim=0)
+            y = torch.cat((y, y_mixup), dim=0)
+            
+        if config.slow_slop > 0.0:
+            # print("slow_slop x shape is", x.shape)
+            x_mixup, y_mixup = slow_slope(
+                x=x,
+                y=y,
+                mixup_rate=config.slow_slop,
+            )
+            # Add Mixup to training batch
+            x = torch.cat((x, x_mixup), dim=0)
+            y = torch.cat((y, y_mixup), dim=0)
+
 
         iter_count += 1
         optimizer.zero_grad()
-        input = input.float().to(device)
-        outputs = model(input)
+        outputs = model(x)
         output = outputs["z"][:, :, :]
         output_complex = outputs["complex_z"]
         dcloss = outputs["dcloss"]
         TFAD_score = outputs["TFAD_score"].reshape(-1)
         
-        rec_loss = criterion(output, input)
-        norm_input = model.revin_layer(input, 'transform')
+        rec_loss = criterion(output, x)
+        norm_input = model.revin_layer(x, 'transform')
         auxi_loss = auxi_loss_fn(output_complex, norm_input)
         tfad_loss = tfad_criterion(TFAD_score, y)
 

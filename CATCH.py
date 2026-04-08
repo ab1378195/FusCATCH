@@ -5,7 +5,7 @@ from layers.mask import channel_mask_generator
 from layers.transformer import Trans_C
 from layers.flatten_head import Flatten_Head
 from layers.TFAD import TFAD
-from layers.cross_attention import CrossAttentionFusion
+from layers.cross_attention import BiCrossAttentionGatedFusion
 
 class CATCHModel(nn.Module):
     def __init__(self, configs):
@@ -68,7 +68,7 @@ class CATCHModel(nn.Module):
         self.get_i = nn.Linear(configs.d_model * 2, configs.d_model * 2)
         # TFAD
         self.TFAD = TFAD(configs)
-        self.cross_attention = CrossAttentionFusion(configs.d_model * 2, configs.num_heads)
+        self.cross_attention = BiCrossAttentionGatedFusion(configs.d_model * 2, configs.num_heads)
 
     def forward(self, z):  # z: [bs x seq_len x n_vars]
         z = self.revin_layer(z, 'norm') 
@@ -113,10 +113,13 @@ class CATCHModel(nn.Module):
         channel_mask = self.mask_generator(z_cat)
 
         z, dcloss = self.frequency_transformer(z_cat, channel_mask) # z: [bs * patch_num,nvars, d_model*2]
+        z_freq = z
 
         TFAD_embedding = TFAD_embedding.unsqueeze(1).repeat(1, patch_num, 1, 1)
         TFAD_embedding = TFAD_embedding.reshape(batch_size * patch_num, 4, -1)
+        tfad_embedding_patch = TFAD_embedding
         z_fused = self.cross_attention(z, TFAD_embedding)
+        
 
         z1 = self.get_r(z_fused)
         z2 = self.get_i(z_fused)
@@ -140,4 +143,4 @@ class CATCHModel(nn.Module):
         # denorm
         z = z.permute(0, 2, 1)
         z = self.revin_layer(z, 'denorm')
-        return {"z":z, "complex_z":complex_z.permute(0, 2, 1), "dcloss":dcloss, "TFAD_score":TFAD_score}
+        return {"z":z, "complex_z":complex_z.permute(0, 2, 1), "dcloss":dcloss, "TFAD_score":TFAD_score, "z_freq":z_freq, "tfad_embedding_patch":tfad_embedding_patch}

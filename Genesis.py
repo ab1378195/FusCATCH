@@ -3,7 +3,7 @@ from config import TransformerConfig
 from sklearn.preprocessing import StandardScaler
 import torch
 import torch.nn as nn
-from loss import frequency_loss, frequency_criterion, coral_loss
+from loss import frequency_loss, frequency_criterion
 from data import split_data, train_val_split, anomaly_detection_data_provider
 import os
 from CATCH import CATCHModel
@@ -16,49 +16,52 @@ from utils import detect_validate, adjust_learning_rate, padding, coe_batch, mix
 from predict import infer_score, infer_label
 from evaluate import calculate
 from copy import deepcopy
+from tfad.model.outlier_exposure import coe_batch
+from tfad.model.mixup import mixup_batch, slow_slope
+from torch_optimizer import Yogi
+from tqdm import tqdm
 import matplotlib.pyplot as plt
+import time
 
-dataset_name = "CalIt2"
+dataset_name = "Genesis"
 mode = "score"
 config = TransformerConfig(
-    Mlr=1e-05, 
-    auxi_lambda=0.1,
-    batch_size=128,
-    cf_dim=128,
+    Mlr=0.0001,
+    batch_size=4,
+    cf_dim=64,
     d_ff=128,
     d_model=128,
-    dc_lambda=0.5,
-    e_layers=2,
-    head_dim=32,
-    inference_patch_size=16,
+    e_layers=3,
+    head_dim=64,
+    inference_patch_size=32,
+    inference_patch_stride=1,
     lr=0.0001,
-    n_heads=8,
-    num_epochs=10, 
-    patch_size=16, 
-    patch_stride=16,
-    score_lambda=0.5,
+    n_heads=16,
+    num_epochs=15, 
+    patch_size=8, 
+    patch_stride=8,
+    score_lambda=1,
     seq_len=192,
     temperature=0.07,
     # TFAD
-    hp_lamb = 1,
+    hp_lamb = 800, 
     # hyper-parameter for TCN encoder
-    tcn_kernel_size = 3, 
-    tcn_out_channels = 64, 
-    tcn_layers = 3,  
-    tcn_maxpool_out_channels = 4, 
+    tcn_kernel_size = 5, #未调
+    tcn_out_channels = 32, 
+    tcn_layers = 4,   
+    tcn_maxpool_out_channels = 8, 
     normalize_embedding = True,
-    suspect_window_length = 12, 
+    suspect_window_length = 12,
     # hyper-parameter for classifier
     distance = "L2",
     # hyper-parameter for cross-attention
-    num_heads = 4, 
+    num_heads = 8, 
     # TFAD training hyper-parameters
-    tfad_lambda = 0.5,
-    coral_lambda = 1e-3,
+    tfad_lambda = 0.05, 
     # TFAD data augmentation hyper-parameters
-    coe_rate = 0.0,
-    mixup_rate = 0.0,
-    slow_slop = 0.01, 
+    coe_rate = 0.8,
+    mixup_rate = 0.0, 
+    slow_slop = 0.0, 
     # TFAD feature selection hyper-parameters
     hidden_dim = 64,
 )
@@ -142,9 +145,11 @@ schedulerM = lr_scheduler.OneCycleLR(
 )
 print("---------------------CATCH TRAIN------------------------")
 tfad_loss_list = []
+time_now = time.time()
 for epoch in range(config.num_epochs):
     iter_count = 0
     train_loss = []
+    tfad_loss_temp = []
     model.train()
 
     step = min(int(len(train_data_loader) / 10), 100)
@@ -152,7 +157,7 @@ for epoch in range(config.num_epochs):
         # target: [bs, seq_len, 1]
         y = target[:, -config.suspect_window_length:, :].squeeze(-1).max(dim=1)[0].float().to(device) # y: [batch_size]
         x = input.float().to(device)
-
+        
         if config.coe_rate > 0:
             # print(" coe_rate x shape is", x.shape)
             x_oe, y_oe = coe_batch(
@@ -187,34 +192,31 @@ for epoch in range(config.num_epochs):
             # Add Mixup to training batch
             x = torch.cat((x, x_mixup), dim=0)
             y = torch.cat((y, y_mixup), dim=0)
-
+            
         iter_count += 1
         optimizer.zero_grad()
+        
         outputs = model(x)
         output = outputs["z"][:, :, :]
         output_complex = outputs["complex_z"]
         dcloss = outputs["dcloss"]
         TFAD_score = outputs["TFAD_score"].reshape(-1)
-        z_freq = outputs["z_freq"]
-        tfad_embedding_patch = outputs["tfad_embedding_patch"]
         
         rec_loss = criterion(output, x)
         norm_input = model.revin_layer(x, 'transform')
         auxi_loss = auxi_loss_fn(output_complex, norm_input)
         tfad_loss = tfad_criterion(TFAD_score, y)
-        z_pool = z_freq.mean(dim=1)
-        t_pool = tfad_embedding_patch.mean(dim=1)
-        align_loss = coral_loss(z_pool, t_pool)
 
-        loss = rec_loss + config.dc_lambda * dcloss + config.auxi_lambda * auxi_loss + config.tfad_lambda * tfad_loss + config.coral_lambda * align_loss
+        loss = rec_loss + config.dc_lambda * dcloss + config.auxi_lambda * auxi_loss + config.tfad_lambda * tfad_loss
+        # print("RecLoss:{:.7f}, DCLoss:{:.7f}, AuxiLoss:{:.7f}, TFADLoss:{:.7f}".format(rec_loss, dcloss, auxi_loss, tfad_loss))
         train_loss.append(loss.item())
-        tfad_loss_list.append(tfad_loss.item())
-
+        tfad_loss_temp.append(tfad_loss.item())
+        
         if (i + 1) % step == 0:
             optimizerM.step()
             optimizerM.zero_grad()
 
-        if (i + 1) % 100 == 0:
+        if (i + 1) % 500 == 0:
             print(
                 "\titers: {0}, epoch: {1} | training time loss: {2:.7f} | training fre loss: {3:.7f} | training dc loss: {4:.7f} | training tfad loss: {5:.7f}".format(
                     i + 1,
@@ -225,13 +227,24 @@ for epoch in range(config.num_epochs):
                     tfad_loss.item()
                 )
             )
+            speed = (time.time() - time_now) / iter_count
+            left_time = speed * (
+                    (config.num_epochs - epoch) * train_steps - i
+            )
+            print(
+                "\tspeed: {:.4f}s/iter; left time: {:.4f}s".format(
+                    speed, left_time
+                )
+            )
             iter_count = 0
+            time_now = time.time()
 
         loss.backward()
         optimizer.step()
 
     print("Epoch: {}".format(epoch + 1))
     train_loss = np.average(train_loss)
+    tfad_loss_list.append(np.average(tfad_loss_temp))
     valid_loss = detect_validate(model, valid_data_loader, criterion)
     print(
         "Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f}".format(
@@ -291,5 +304,5 @@ elif mode=="label":
         results["ratio"] = ratio
         results_list.append(results)
     print(results_list)
-# plt.plot(tfad_loss_list)
-# plt.show()
+plt.plot(tfad_loss_list)
+plt.show()

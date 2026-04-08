@@ -85,6 +85,12 @@ class TFAD(nn.Module):
         self.classifier = ContrastiveClasifier(
             distance=distance,
         )
+        # Feature Weighting (Soft Gating)
+        self.mlp = nn.Sequential(
+            nn.Linear(config.d_model * 2, config.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(config.hidden_dim, 1),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x shape: (batch_size, c_in, window_length)
@@ -98,4 +104,10 @@ class TFAD(nn.Module):
         logits_anomaly = self.classifier(whole_res_emb, context_res_emb, whole_cyc_emb, context_cyc_emb)        
         
         embedding = torch.stack([whole_res_emb, context_res_emb, whole_cyc_emb, context_cyc_emb], dim=1) # [batch_size, 4, d_model * 2]
-        return {"score":logits_anomaly, "embedding":embedding}
+       
+        weighted_embedding = embedding
+        # score = self.mlp(embedding).squeeze(-1) # [batch_size, 4]
+        # alpha = torch.softmax(score, dim=1) # [batch_size, 4]
+        # weighted_embedding = embedding * alpha.unsqueeze(-1) # [batch_size, 4, d_model * 2]
+        return {"score":logits_anomaly, "embedding":weighted_embedding}
+
