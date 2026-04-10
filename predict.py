@@ -14,7 +14,7 @@ def infer_label(model, thre_loader, time_anomaly_criterion, freq_anomaly_criteri
     for ratio in anomaly_ratio:
         threshold = np.percentile(combined_scores, 100 - ratio)
         preds[ratio] = (thre_scores > threshold).astype(int)
-    print(preds, thre_scores)
+    # print(preds, thre_scores)
     return preds, thre_scores
 
 def calculate_anomaly_score(model, thre_loader, time_anomaly_criterion, freq_anomaly_criterion, score_lambda):

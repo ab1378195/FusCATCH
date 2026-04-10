@@ -7,12 +7,11 @@ from loss import frequency_loss, frequency_criterion, coral_loss
 from data import split_data, train_val_split, anomaly_detection_data_provider
 import os
 from CATCH import CATCHModel
-from torchinfo import summary
 import pandas as pd
 from earlyStopping import EarlyStopping
 from torch.optim import lr_scheduler
 import numpy as np
-from utils import detect_validate, adjust_learning_rate, padding, coe_batch, mixup_batch, slow_slope
+from utils import detect_validate, adjust_learning_rate, padding, coe_batch, mixup_batch, slow_slope, plot_anomaly_detection_result
 from predict import infer_score, infer_label
 from evaluate import calculate
 from copy import deepcopy
@@ -48,7 +47,7 @@ model = CATCHModel(config)
 from data import fix_random_seed
 fix_random_seed(2021)
 model.to(device)
-# summary(model)
+
 train_data_value, valid_data, train_label_value, valid_label = train_val_split(train_data, train_label, 0.8)
 scaler.fit(train_data_value.values)
 
@@ -249,11 +248,22 @@ elif mode=="label":
         config.anomaly_ratio = [config.anomaly_ratio]
     predict_labels, scores = infer_label(model, thre_loader, time_anomaly_criterion, freq_anomaly_criterion, config.score_lambda, train_data_loader, test_data_loader, config.anomaly_ratio)
     results_list = []
+    best_f1 = 0
+    best_ratio = 0
+    best_predict_label = None
     for ratio, predict_label in predict_labels.items():
         predict_label, scores = padding(actual_label, predict_label, scores)
         results = calculate(mode, actual_label.astype(float), predicted=predict_label.astype(float))
         results["ratio"] = ratio
-        results_list.append(results)
-    print(results_list)
-plt.plot(tfad_loss_list)
-plt.show()
+        if results["f_score"] > best_f1:
+            best_f1 = results["f_score"]
+            best_ratio = ratio
+            best_results = results
+            best_predict_label = deepcopy(predict_label)
+        print(results)
+    print("The best f1 is {} with the ratio of {}".format(best_f1, best_ratio))
+    
+    all_real_labels = np.concatenate([train_label.to_numpy().flatten(), test_label.to_numpy().flatten()])
+    plot_anomaly_detection_result(dataset_name, all_real_labels, best_predict_label)
+# plt.plot(tfad_loss_list)
+# plt.show()

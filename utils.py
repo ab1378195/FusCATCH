@@ -277,3 +277,65 @@ def slow_slope(
     y_oe= torch.ones(mixup_size).type_as(y)
 
     return x_mixup, y_oe
+
+
+def plot_anomaly_detection_result(dataset_name, real_labels_full, detected_labels_test, plot_column='Volume'):
+    import os
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    path = os.path.join("data", "raw", f"{dataset_name}.csv")
+    df = pd.read_csv(path)
+    
+    # Convert to standard format
+    dates = pd.to_datetime(df["Date"])
+    values = df[plot_column].to_numpy()
+    real = np.array(real_labels_full).astype(int)
+    
+    # Construct detection labels covering full dataset
+    L = len(values)
+    det = np.zeros(L, dtype=int)
+    # Direct mapping: detected_labels_test corresponds to the last N points
+    N_test = len(detected_labels_test)
+    det[L-N_test:L] = detected_labels_test
+
+    def intervals(labels):
+        res = []
+        s = None
+        for i, v in enumerate(labels):
+            if v == 1 and s is None:
+                s = i
+            elif v == 0 and s is not None:
+                res.append((s, i))
+                s = None
+        if s is not None:
+            res.append((s, len(labels)))
+        return res
+
+    plt.figure(figsize=(16, 5))
+    plt.subplot(2,1,1)
+    plt.plot(dates, values, color="tab:blue", linewidth=1, alpha=0.85)
+    
+    # Real (Lime, higher zorder)
+    ri = intervals(real)
+    for i, (s, e) in enumerate(ri):
+        xs, xe = dates.iloc[s], dates.iloc[min(e, L - 1)]
+        plt.axvspan(xs, xe, color="lime", alpha=0.3, zorder=2, label="Real anomalies" if i == 0 else "")
+
+    # Detected (Red, lower zorder)
+    plt.subplot(2,1,2)
+    plt.plot(dates, values, color="tab:blue", linewidth=1, alpha=0.85)
+    di = intervals(det)
+    for i, (s, e) in enumerate(di):
+        xs, xe = dates.iloc[s], dates.iloc[min(e, L - 1)]
+        plt.axvspan(xs, xe, color="orange", alpha=0.5, zorder=3, hatch="//", label="Detected anomalies" if i == 0 else "")
+        
+
+
+    plt.xlabel("Time", fontsize=12)
+    plt.ylabel(plot_column, fontsize=12)
+    plt.title(f"Anomaly Detection Results for {dataset_name}", fontsize=16)
+    plt.legend(loc="upper right")
+    plt.grid(axis='y', linestyle='--', alpha=0.3)
+    plt.tight_layout()
+    plt.show()

@@ -28,7 +28,7 @@ DEFAULT_HYPER_PARAMS = {
     "num_epochs": 3,
     "batch_size": 128,
     "patience": 3,
-    "anomaly_ratio": [0.1, 0.5, 1.0, 2, 3, 5.0, 10.0, 15, 20, 25],
+    "anomaly_ratio": [0.1, 0.5, 1.0, 1.5, 2, 3, 5.0, 10.0, 15, 20, 25],
     "seq_len": 192,
     "pct_start": 0.3,
     "revin": 1,
@@ -96,7 +96,12 @@ TRAIN_LENGTH = {
     "synthetic_sub_mix0.089": 20000,
     "tre0.0482": 20000,
     "tre0.0778": 20000,
-    "PaySim": 3181310
+    "PaySim": 3181310,
+    "TRBO": 502, 
+    "APPB": 503,
+    "AEMD": 503,
+    "NBDR": 503,
+    "GME": 503
 }
 METRICS_SCORE = ["auc_roc", "auc_pr", "R_AUC_ROC", "R_AUC_PR", "VUS_ROC", "VUS_PR"]
 METRICS_LABEL = [
