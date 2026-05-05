@@ -28,8 +28,9 @@
   "num_heads": 4,
   "tfad_lambda": 0.5,
   "coral_lambda": 0.1,
-  "coe_rate": 0.0,
+  "coe_rate": 0.1,
   "mixup_rate": 0.0,
-  "slow_slop": 0.0,
-  "hidden_dim": 64
+  "slow_slop": 1,
+  "hidden_dim": 64,
+  "anomaly_ratio": 3
 }

@@ -183,6 +183,11 @@ def auc_pr(actual: np.ndarray, predicted: np.ndarray, **kwargs):
     return metrics.average_precision_score(actual, predicted)
 
 
+def ks(actual: np.ndarray, predicted: np.ndarray, **kwargs):
+    fpr, tpr, thresholds = metrics.roc_curve(actual, predicted)
+    return max(tpr - fpr)
+
+
 def R_AUC_ROC(actual: np.ndarray, predicted: np.ndarray, **kwargs):
     slidingWindow = int(np.median(get_list_anomaly(actual)))
     # slidingWindow = 100

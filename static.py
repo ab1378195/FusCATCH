@@ -64,6 +64,7 @@ TRAIN_LENGTH = {
     "CalIt2": 2520,
     "CICIDS": 85115,
     "Creditcard": 142403,
+    "Credit": 142403,
     "GECCO": 69260,
     "Genesis": 3604,
     "MSL": 58317,
@@ -103,7 +104,7 @@ TRAIN_LENGTH = {
     "NBDR": 503,
     "GME": 503
 }
-METRICS_SCORE = ["auc_roc", "auc_pr", "R_AUC_ROC", "R_AUC_PR", "VUS_ROC", "VUS_PR"]
+METRICS_SCORE = ["auc_roc", "auc_pr", "ks", "R_AUC_ROC", "R_AUC_PR", "VUS_ROC", "VUS_PR"]
 METRICS_LABEL = [
     "accuracy",
     "f_score",

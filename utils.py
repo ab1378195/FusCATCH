@@ -1,11 +1,6 @@
 from torch import logit
 import torch
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Union
-import torch.nn as nn
-from collections.abc import Callable
-import sklearn.metrics
-
 
 
 def adjust_learning_rate(optimizer, scheduler, epoch, args, printout=True):
@@ -278,7 +273,6 @@ def slow_slope(
 
     return x_mixup, y_oe
 
-
 def plot_anomaly_detection_result(dataset_name, real_labels_full, detected_labels_test, plot_column='Volume'):
     import os
     import numpy as np
@@ -300,6 +294,7 @@ def plot_anomaly_detection_result(dataset_name, real_labels_full, detected_label
     det[L-N_test:L] = detected_labels_test
 
     def intervals(labels):
+        """将标签数组转换为（起始，结束）的区间列表"""
         res = []
         s = None
         for i, v in enumerate(labels):
@@ -312,30 +307,63 @@ def plot_anomaly_detection_result(dataset_name, real_labels_full, detected_label
             res.append((s, len(labels)))
         return res
 
+    # 修改开始：合并绘图
     plt.figure(figsize=(16, 5))
-    plt.subplot(2,1,1)
-    plt.plot(dates, values, color="tab:blue", linewidth=1, alpha=0.85)
-    
-    # Real (Lime, higher zorder)
+    # 只创建一个子图
+    plt.plot(dates, values, color="tab:blue", linewidth=1, alpha=0.85, label=f'{plot_column}') # 可选的曲线图例
+
+    # 1. 绘制真实异常区域（保持原来的样式：绿色半透明背景）
     ri = intervals(real)
     for i, (s, e) in enumerate(ri):
         xs, xe = dates.iloc[s], dates.iloc[min(e, L - 1)]
         plt.axvspan(xs, xe, color="lime", alpha=0.3, zorder=2, label="Real anomalies" if i == 0 else "")
 
-    # Detected (Red, lower zorder)
-    plt.subplot(2,1,2)
-    plt.plot(dates, values, color="tab:blue", linewidth=1, alpha=0.85)
+    # 2. 绘制预测异常区域（修改为：无填充，橙色边框和//图案）
     di = intervals(det)
     for i, (s, e) in enumerate(di):
         xs, xe = dates.iloc[s], dates.iloc[min(e, L - 1)]
-        plt.axvspan(xs, xe, color="orange", alpha=0.5, zorder=3, hatch="//", label="Detected anomalies" if i == 0 else "")
+        # 使用 edgecolor 设置边框颜色，facecolor='none' 确保无填充
+        # hatch 设置斜线图案，lw 设置边框线宽
+        plt.axvspan(xs, xe, 
+                    facecolor='none',        # 无填充色
+                    edgecolor='orange',      # 边框为橙色
+                    linewidth=2,             # 边框线宽
+                    hatch='//',              # 斜线图案
+                    zorder=3, 
+                    label="Detected anomalies" if i == 0 else "")
         
-
-
+    # 设置图表信息
     plt.xlabel("Time", fontsize=12)
     plt.ylabel(plot_column, fontsize=12)
     plt.title(f"Anomaly Detection Results for {dataset_name}", fontsize=16)
     plt.legend(loc="upper right")
     plt.grid(axis='y', linestyle='--', alpha=0.3)
     plt.tight_layout()
+    plt.show()
+
+def plot_roc_curve(dataset_name, actual, scores):
+    """
+    绘制 ROC 曲线并保存或显示。
+
+    :param dataset_name: 数据集名称
+    :param actual: 真实标签 (0 或 1)
+    :param scores: 模型输出的异常分数
+    """
+    from sklearn.metrics import roc_curve, auc
+    import matplotlib.pyplot as plt
+
+    fpr, tpr, thresholds = roc_curve(actual, scores)
+    roc_auc = auc(fpr, tpr)
+
+    plt.rcParams['font.sans-serif'] = ['SimHei']
+    plt.figure(figsize=(8, 6))
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC曲线 (面积: {roc_auc:.4f})')
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('假阳性率')
+    plt.ylabel('真阳性率')
+    plt.title(f'ROC曲线 - {dataset_name}')
+    plt.legend(loc="lower right")
+    plt.grid(alpha=0.3)
     plt.show()

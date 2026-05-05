@@ -11,7 +11,7 @@
   "inference_patch_size": 2,
   "lr": 5e-5,
   "n_heads": 8,
-  "num_epochs": 10, 
+  "num_epochs": 9, 
   "patch_size": 2,
   "patch_stride": 2,
   "score_lambda": 0.5,

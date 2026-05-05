@@ -1,15 +1,18 @@
 import pandas as pd
 
 # ====== 1. 读取数据 ======
-input_file = "data\\raw\\TRBO.csv"   # 修改为你的文件路径
+input_file = "data\\Credit.csv"   # 修改为你的文件路径
 df = pd.read_csv(input_file)
 
 
 # ====== 5. 构造时间列 ======
 # 使用 step 作为时间（如果你想用 index 也可以）
-time = df["Date"]
-df = df.drop(columns=["Date"])
+time = df["Time"]
+df = df.drop(columns=["Time"])
 
+
+df = df.drop(columns=["V8","V13","V15","V20","V21","V22","V23","V24","V25","V26","V27","V28"])
+print(df.columns)
 # ====== 6. 转换为 CATCH 格式 ======
 rows = []
 
@@ -29,7 +32,7 @@ for col in tqdm(df.columns):
 catch_df = pd.DataFrame(rows, columns=["date", "data", "cols"])
 
 # ====== 9. 保存 ======
-output_file = "TRBO.csv"
+output_file = "Credit.csv"
 catch_df.to_csv(output_file, index=False)
 
 print("转换完成，输出文件：", output_file)

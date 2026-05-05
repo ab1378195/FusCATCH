@@ -105,9 +105,9 @@ class TFAD(nn.Module):
         
         embedding = torch.stack([whole_res_emb, context_res_emb, whole_cyc_emb, context_cyc_emb], dim=1) # [batch_size, 4, d_model * 2]
        
-        # weighted_embedding = embedding
         score = self.mlp(embedding).squeeze(-1) # [batch_size, 4]
         alpha = torch.softmax(score, dim=1) # [batch_size, 4]
         weighted_embedding = embedding * alpha.unsqueeze(-1) # [batch_size, 4, d_model * 2]
-        return {"score":logits_anomaly, "embedding":weighted_embedding}
+        # return {"score":logits_anomaly, "embedding":weighted_embedding}
+        return {"score":logits_anomaly, "embedding":weighted_embedding, "alpha": alpha}
 

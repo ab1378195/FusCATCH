@@ -78,6 +78,7 @@ class CATCHModel(nn.Module):
         TFAD_outputs = self.TFAD(z)
         TFAD_score = TFAD_outputs["score"]
         TFAD_embedding = TFAD_outputs["embedding"]
+        TFAD_alpha = TFAD_outputs["alpha"]
         
         z = torch.fft.fft(z)
         z1 = z.real
@@ -143,4 +144,5 @@ class CATCHModel(nn.Module):
         # denorm
         z = z.permute(0, 2, 1)
         z = self.revin_layer(z, 'denorm')
-        return {"z":z, "complex_z":complex_z.permute(0, 2, 1), "dcloss":dcloss, "TFAD_score":TFAD_score, "z_freq":z_freq, "tfad_embedding_patch":tfad_embedding_patch}
+        # return {"z":z, "complex_z":complex_z.permute(0, 2, 1), "dcloss":dcloss, "TFAD_score":TFAD_score, "z_freq":z_freq, "tfad_embedding_patch":tfad_embedding_patch}
+        return {"z":z, "complex_z":complex_z.permute(0, 2, 1), "dcloss":dcloss, "TFAD_score":TFAD_score, "z_freq":z_freq, "tfad_embedding_patch":tfad_embedding_patch, "TFAD_alpha": TFAD_alpha}
